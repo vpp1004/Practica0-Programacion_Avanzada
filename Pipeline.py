@@ -47,11 +47,11 @@ class Pipeline:
     # Ejercicio 7: Carga de secuencias con SeqIO
     def load_sequences(self):
         """
-        Carga la secuencia de entrada en el estado interno. 
+        Carga secuencias desde un fichero usando SeqIO.parse y las almacena en un diccionario indexado por ID.
         """
         print("Paso 1: Cargando secuencias...")
 
-        for seq in self.input_sequence:
+        for seq in SeqIO.parse():
             self.sequences.append(Seq(seq.upper()))
 
         print(f"Se cargaron {len(self.sequences)} secuencias")
