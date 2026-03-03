@@ -1,11 +1,12 @@
 import sys
 from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 # Ejercicio 2: Estado interno del pipeline.
 # Mantiene un estado interno persistente que permite alamacenar datos y resultados intermedios.
 class Pipeline:
     """
-    Clase que define la arquitectura básica de un pipline bioinformático.
+    Clase que define la arquitectura básica de un pipeline bioinformático.
     """
 
     def __init__(self, input_sequence):
@@ -19,10 +20,11 @@ class Pipeline:
         ---------
         """
 
-        self.input_sequence = input_sequence # Secuencia cruda.
+        self.input_path = input_path
+        self.input_format = input_format # Guardamos nombre y formato del fichero
 
-        # Lista que almacenará las secuencias como objetos.
-        self.sequences = []
+        # Diccionario que almacenará las secuencias como objetos.
+        self.sequences = {}
 
         # Diccionario que guarda información descriptiva sobre secuencias.
         self.metadata = {
