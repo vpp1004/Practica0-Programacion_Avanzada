@@ -1,6 +1,7 @@
 import sys
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
+from Bio import SeqIO
 
 # Ejercicio 2: Estado interno del pipeline.
 # Mantiene un estado interno persistente que permite alamacenar datos y resultados intermedios.
@@ -9,14 +10,16 @@ class Pipeline:
     Clase que define la arquitectura básica de un pipeline bioinformático.
     """
 
-    def __init__(self, input_sequence):
+    def __init__(self, input_path, input_format):
         """
         Inicialización estado interno del pipeline. 
 
         ---------
         Params:
-        input_sequence: list
-           Lista de secuencias pasadas por línea de comandos. 
+        input_path: str
+           Ruta al fichero donde se encuentran las secuencias.
+        input_format: str
+            Formato del fichero. 
         ---------
         """
 
@@ -39,13 +42,14 @@ class Pipeline:
 
         }
 
-        # Diccionario con los parámetros de configuración del pipiline.
-        self.config = {}
+        # Diccionario con los parámetros de configuración del pipeline.
+        self.config = {
+            "min_length" : 5  # Ponemos como parámetro de filtrado por longitud 5
+        }
 
         # Diccionario con los resultados finales.
         self.results = {}
 
-    #Ejercicio 3: Flujo de ejecución. Etapas del pipeline.
     # Ejercicio 7: Carga de secuencias con SeqIO
     def load_sequences(self):
         """
@@ -53,47 +57,84 @@ class Pipeline:
         """
         print("Paso 1: Cargando secuencias...")
 
-        for seq in SeqIO.parse():
-            self.sequences.append(Seq(seq.upper()))
+        for record in SeqIO.parse(self.input_path, self.input_format):
+            self.sequences[record.id] = record  # Para poder acceder por ID fácilemnte.
+        
+        # Ante fichero vacío o incorrecto:
+        if len(self.sequences) == 0:
+            print("No se cargaron secuencias.")
+            return
+        
+        longitudes =  [len(record.seq) for record in self.sequences.values()]
 
-        print(f"Se cargaron {len(self.sequences)} secuencias")
+        self.metadata["n_total"] = len(self.sequences)
+        self.metadata["n_min"] = min(longitudes)
+        self.metadata["n_max"] = max(longitudes)
+        self.metadata["n_mean"] = sum(longitudes) / len(longitudes)
+
+        print(f"Se cargaron {self.metadata['n_total']} secuencias.")
+
+    # Ejercicio 8: Filtrado por longitud:
+    def filter_by_length(self, min_length):
+        """
+        Elimina secuencias de longitud inferior a un umbral establecido anteriormente (5).
+        """
+        print("Paso 2: Filtrando por longitud mínima...")
+
+        filtradas = {
+            id_: record
+            for id_, record in self.sequences.items()
+            if len(record.seq) >= min_length
+        }
+
+        self.sequences = filtradas
+
+        print(f"Secuencias resultantes tras el filtrado: {len(self.sequences)}")
+
+        # Actualizamos el metadata tras filtrado:
+        if len(self.sequences) > 0:
+            longitudes = [len(record.seq) for record in self.sequences.values()]
+            self.metadata["n_total"] = len(self.sequences)
+            self.metadata["n_min"] = min(longitudes)
+            self.metadata["n_max"] = max(longitudes)
+            self.metadata["n_mean"] = sum(longitudes) / len(longitudes)
 
     #Ejercicio 5: Calsificación y normalización biológica de secuencias.
     def classify_and_normalize(self) :
         """
-        Calsifica las secuencias y convierte ARN --> ADN. Descarta secuencias inválidas.
+        Clasifica las secuencias y convierte ARN --> ADN. Descarta secuencias inválidas.
         """
-        print("Paso 2: Clasificación y normalización secuencias...")
+        print("Paso 3: Clasificación y normalización secuencias...")
 
         dict_dna = {"A", "C", "G", "T"}
         dict_rna = {"A", "C", "G", "U"}
         dict_prot = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"}
 
-        seq_valida = []
+        seq_valida = {}
 
-        for seq in self.sequences:
-            letras = set(str(seq))
+        for record_id, record in self.sequences.items():
+            letras = set(str(record.seq))
 
             # Comprobación es ADN
             if letras.issubset(dict_dna):
                 self.metadata["n_dna"] += 1
-                seq_valida.append(seq)
+                seq_valida[record_id] = record
 
             # Comprobación es ARN
             elif letras.issubset(dict_rna):
                 self.metadata["n_rna"] += 1
-                dna_str = str(seq).replace("U", "T") # Reemplaza U por T
-                dna_seq = Seq(dna_str)
-                seq_valida.append(dna_seq)
+                dna_str = str(record.seq).replace("U", "T") # Reemplaza U por T
+                record.seq = Seq(dna_str)
+                seq_valida[record_id] = record
             
             # Comprobación es proteína
             elif letras.issubset(dict_prot):
                 self.metadata["n_prot"] += 1
-                seq_valida.append(seq)
+                seq_valida[record_id] = record
             
             # Si no es ninguna comprobación de las anteriores
             else:
-                print(f"Secuencia inválida: {seq}")
+                print(f"Secuencia inválida: {record_id}")
 
         self.sequences = seq_valida
         print("Clasificación completada.")
@@ -103,9 +144,9 @@ class Pipeline:
         """
         Realiza un procesamiento simple sobre la secuencia
         """
-        print("Paso 3: Procesando secuencias...")
+        print("Paso 4: Procesando secuencias...")
 
-        longitud = [len(seq) for seq in self.sequences] # Calcular longitud
+        longitud = [len(record.seq) for record in self.sequences.values()] # Calcular longitud
         self.results["longitud"] = longitud
         print(f"Longitud de cada cadena: {longitud}")
 
@@ -114,14 +155,14 @@ class Pipeline:
         """
         Calcula estadísticas descriptivas globales sobre las secuencias actualmente almacenadas.
         """
-        print("Paso 4: Calculando estadísticas globales...")
+        print("Paso 5: Calculando estadísticas globales...")
 
         total = len(self.sequences)
         if total == 0:
-            print("No hay secuencias válidas")
+            print("No hay secuencias válidas.")
             return
         
-        longitud = [len(seq) for seq in self.sequences]
+        longitud = [len(record.seq) for record in self.sequences.values()]
 
         min_long = min(longitud)
         max_long = max(longitud)
@@ -133,7 +174,7 @@ class Pipeline:
         self.metadata["media_longitud"] = media_long
 
         # Número total de secuencias.
-        print(f"Número total de secuencias:{total}") 
+        print(f"Número total de secuencias: {total}") 
 
         # Longitud mínima, máxima y media.
         print(f"Longitud mínima: {min_long}")
@@ -144,6 +185,20 @@ class Pipeline:
         print(f"Número de secuencias de proteína: {self.metadata['n_prot']}")
 
         # Número de secuencias de cada tipo biológico.
+
+    # Ejercicio 9: Escritura de resultados:
+    def save_sequences(self, output_path, output_format):
+        """
+        Guarda las secuencias actuales usando SeqIO.write.
+        """
+        print("Paso 6: Guardando secuencias...")
+
+        SeqIO.write(self.sequences.values(), output_path, output_format)
+
+        print(f"Fichero generado: {output_path}")
+        print(f"Número final de secuencias: {len(self.sequences)}")
+
+
     
     def run(self):
         """
@@ -151,10 +206,12 @@ class Pipeline:
         """
         print("Inicio del Pipeline")
 
-        self.load()
+        self.load_sequences()
+        self.filter_by_length(self.config["min_length"])
         self.classify_and_normalize()
         self.process()
         self.compute_basic_stats()
+        self.save_sequences("output.fasta", self.input_format)
 
         print("Fin del Pipeline")
     
@@ -164,14 +221,15 @@ class Pipeline:
 
 # Ejecución desde línea de comandos.
 if __name__ == "__main__":
-    if len(sys.argv)<2:
+    if len(sys.argv)<3:
         print("Uso:")
-        print("python Pipline.py SEQ1")
+        print("python Pipeline.py SEQ1")
         sys.exit(1)
 
-    input_sequence = sys.argv[1:] # Secuencias como listas
+    input_path = sys.argv[1]     # fichero de secuencias
+    input_format = sys.argv[2]   # formato del fichero
 
-    pipeline = Pipeline(input_sequence)
+    pipeline = Pipeline(input_path, input_format)
     pipeline.run()
 
 
