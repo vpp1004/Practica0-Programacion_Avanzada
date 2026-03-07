@@ -2,6 +2,8 @@ import sys
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
+from Bio.Seq import UndefinedSequenceError
+
 
 # Ejercicio 2: Estado interno del pipeline.
 # Mantiene un estado interno persistente que permite alamacenar datos y resultados intermedios.
@@ -113,8 +115,14 @@ class Pipeline:
         seq_valida = {}
 
         for record_id, record in self.sequences.items():
-            letras = set(str(record.seq))
+            try:
+                seq = str(record.seq)
+            except UndefinedSequenceError:
+                print(f"Secuencia sin contenido: {record_id}")
+                continue
 
+            letras = set(seq)
+            
             # Comprobación es ADN
             if letras.issubset(dict_dna):
                 self.metadata["n_dna"] += 1
