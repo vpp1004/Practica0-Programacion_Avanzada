@@ -60,21 +60,29 @@ class Pipeline:
         print("Paso 1: Cargando secuencias...")
 
         for record in SeqIO.parse(self.input_path, self.input_format):
+
+            # Comprobamos el tipo
+            if not isinstance(record, SeqRecord):
+                print("Registro no válido encontrado.")
+                continue
+
             self.sequences[record.id] = record  # Para poder acceder por ID fácilemnte.
-        
+       
+        n_sequences = len(self.sequences)
+
         # Ante fichero vacío o incorrecto:
-        if len(self.sequences) == 0:
+        if n_sequences == 0:
             print("No se cargaron secuencias.")
             return
         
         longitudes =  [len(record.seq) for record in self.sequences.values()]
 
-        self.metadata["n_total"] = len(self.sequences)
+        self.metadata["n_total"] = n_sequences
         self.metadata["n_min"] = min(longitudes)
         self.metadata["n_max"] = max(longitudes)
-        self.metadata["n_mean"] = sum(longitudes) / len(longitudes)
+        self.metadata["n_mean"] = sum(longitudes) / n_sequences
 
-        print(f"Se cargaron {self.metadata['n_total']} secuencias.")
+        print(f"Se cargaron {n_sequences} secuencias.")
 
     # Ejercicio 8: Filtrado por longitud:
     def filter_by_length(self, min_length):
@@ -82,6 +90,10 @@ class Pipeline:
         Elimina secuencias de longitud inferior a un umbral establecido anteriormente (5).
         """
         print("Paso 2: Filtrando por longitud mínima...")
+
+        if len(self.sequences) == 0:
+            print("No hay secuencias para filtrar.")
+            return
 
         filtradas = {
             id_: record
@@ -91,15 +103,17 @@ class Pipeline:
 
         self.sequences = filtradas
 
-        print(f"Secuencias resultantes tras el filtrado: {len(self.sequences)}")
+        n_sequences = len(self.save_sequences)
+
+        print(f"Secuencias resultantes tras el filtrado: {n_sequences}")
 
         # Actualizamos el metadata tras filtrado:
-        if len(self.sequences) > 0:
+        if n_sequences > 0:
             longitudes = [len(record.seq) for record in self.sequences.values()]
-            self.metadata["n_total"] = len(self.sequences)
+            self.metadata["n_total"] = n_sequences
             self.metadata["n_min"] = min(longitudes)
             self.metadata["n_max"] = max(longitudes)
-            self.metadata["n_mean"] = sum(longitudes) / len(longitudes)
+            self.metadata["n_mean"] = sum(longitudes) / n_sequences
 
     #Ejercicio 5: Calsificación y normalización biológica de secuencias.
     def classify_and_normalize(self) :
@@ -116,7 +130,7 @@ class Pipeline:
 
         for record_id, record in self.sequences.items():
             try:
-                seq = str(record.seq)
+                seq = str(record.seq).upper()
             except UndefinedSequenceError:
                 print(f"Secuencia sin contenido: {record_id}")
                 continue
@@ -145,6 +159,7 @@ class Pipeline:
                 print(f"Secuencia inválida: {record_id}")
 
         self.sequences = seq_valida
+
         print("Clasificación completada.")
 
     #Ejercicio 4: Soporte para múltiples secuencias por línea de comandos.
@@ -166,6 +181,7 @@ class Pipeline:
         print("Paso 5: Calculando estadísticas globales...")
 
         total = len(self.sequences)
+
         if total == 0:
             print("No hay secuencias válidas.")
             return
@@ -201,10 +217,10 @@ class Pipeline:
         """
         print("Paso 6: Guardando secuencias...")
 
-        SeqIO.write(self.sequences.values(), output_path, output_format)
+        n_written = SeqIO.write(self.sequences.values(), output_path, output_format)
 
         print(f"Fichero generado: {output_path}")
-        print(f"Número final de secuencias: {len(self.sequences)}")
+        print(f"Número final de secuencias: {n_written}")
 
 
     
@@ -215,7 +231,12 @@ class Pipeline:
         print("Inicio del Pipeline")
 
         self.load_sequences()
-        self.filter_by_length(self.config["min_length"])
+
+        # Comprobamos que  self.config() no queda vacío:
+        min_length = self.config.get("min_length", 0)
+
+        self.filter_by_length(min_length)
+
         self.classify_and_normalize()
         self.process()
         self.compute_basic_stats()
@@ -229,9 +250,11 @@ class Pipeline:
 
 # Ejecución desde línea de comandos.
 if __name__ == "__main__":
-    if len(sys.argv)<3:
+    if len(sys.argv) < 3:
         print("Uso:")
-        print("python Pipeline.py SEQ1")
+        print("python Pipeline.py fichero_secuencias formato")
+        print("Ejemplo:")
+        print("python Pipeline.py secuencias.fasta fasta")
         sys.exit(1)
 
     input_path = sys.argv[1]     # fichero de secuencias
