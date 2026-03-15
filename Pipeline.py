@@ -58,43 +58,31 @@ class Pipeline:
         """
         Carga secuencias desde un fichero usando SeqIO.parse y las almacena en un diccionario indexado por ID.
         """
-        print("Paso 1: Cargando secuencias...")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 1: Cargando secuencias...")
 
         for record in SeqIO.parse(self.input_path, self.input_format):
-
-            # Comprobamos el tipo
-            if not isinstance(record, SeqRecord):
-                print("Registro no válido encontrado.")
-                continue
-
             self.sequences[record.id] = record  # Para poder acceder por ID fácilemnte.
-       
-        n_sequences = len(self.sequences)
-
-        # Ante fichero vacío o incorrecto:
-        if n_sequences == 0:
-            print("No se cargaron secuencias.")
+        
+        # Ante fichero vacío o incorrecto: 
+        if len(self.sequences) == 0:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}]No se cargaron secuencias.")
             return
         
         longitudes =  [len(record.seq) for record in self.sequences.values()]
 
-        self.metadata["n_total"] = n_sequences
+        self.metadata["n_total"] = len(self.sequences)
         self.metadata["n_min"] = min(longitudes)
         self.metadata["n_max"] = max(longitudes)
-        self.metadata["n_mean"] = sum(longitudes) / n_sequences
+        self.metadata["n_mean"] = sum(longitudes) / len(longitudes)
 
-        print(f"Se cargaron {n_sequences} secuencias.")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Se cargaron {self.metadata['n_total']} secuencias.")
 
     # Ejercicio 8: Filtrado por longitud:
     def filter_by_length(self, min_length):
         """
         Elimina secuencias de longitud inferior a un umbral establecido anteriormente (5).
         """
-        print("Paso 2: Filtrando por longitud mínima...")
-
-        if len(self.sequences) == 0:
-            print("No hay secuencias para filtrar.")
-            return
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 2: Filtrando por longitud mínima...")
 
         filtradas = {
             id_: record
@@ -104,24 +92,22 @@ class Pipeline:
 
         self.sequences = filtradas
 
-        n_sequences = len(self.save_sequences)
-
-        print(f"Secuencias resultantes tras el filtrado: {n_sequences}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Secuencias resultantes tras el filtrado: {len(self.sequences)}")
 
         # Actualizamos el metadata tras filtrado:
-        if n_sequences > 0:
+        if len(self.sequences) > 0:
             longitudes = [len(record.seq) for record in self.sequences.values()]
-            self.metadata["n_total"] = n_sequences
+            self.metadata["n_total"] = len(self.sequences)
             self.metadata["n_min"] = min(longitudes)
             self.metadata["n_max"] = max(longitudes)
-            self.metadata["n_mean"] = sum(longitudes) / n_sequences
+            self.metadata["n_mean"] = sum(longitudes) / len(longitudes)
 
     #Ejercicio 5: Calsificación y normalización biológica de secuencias.
     def classify_and_normalize(self) :
         """
         Clasifica las secuencias y convierte ARN --> ADN. Descarta secuencias inválidas.
         """
-        print("Paso 3: Clasificación y normalización secuencias...")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 3: Clasificación y normalización secuencias...")
 
         dict_dna = {"A", "C", "G", "T"}
         dict_rna = {"A", "C", "G", "U"}
@@ -131,9 +117,9 @@ class Pipeline:
 
         for record_id, record in self.sequences.items():
             try:
-                seq = str(record.seq).upper()
+                seq = str(record.seq)
             except UndefinedSequenceError:
-                print(f"Secuencia sin contenido: {record_id}")
+                print(f"[{datetime.now().strftime('%H:%M:%S')}]Secuencia sin contenido: {record_id}")
                 continue
 
             letras = set(seq)
@@ -157,34 +143,32 @@ class Pipeline:
             
             # Si no es ninguna comprobación de las anteriores
             else:
-                print(f"Secuencia inválida: {record_id}")
+                print(f"[{datetime.now().strftime('%H:%M:%S')}]Secuencia inválida: {record_id}")
 
         self.sequences = seq_valida
-
-        print("Clasificación completada.")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Clasificación completada.")
 
     #Ejercicio 4: Soporte para múltiples secuencias por línea de comandos.
     def process(self):
         """
         Realiza un procesamiento simple sobre la secuencia
         """
-        print("Paso 4: Procesando secuencias...")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 4: Procesando secuencias...")
 
         longitud = [len(record.seq) for record in self.sequences.values()] # Calcular longitud
         self.results["longitud"] = longitud
-        print(f"Longitud de cada cadena: {longitud}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Longitud de cada cadena: {longitud}")
 
     #Ejercicio 6: Estadísticas globales del pipeline.
     def compute_basic_stats(self):
         """
         Calcula estadísticas descriptivas globales sobre las secuencias actualmente almacenadas.
         """
-        print("Paso 5: Calculando estadísticas globales...")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 5: Calculando estadísticas globales...")
 
         total = len(self.sequences)
-
         if total == 0:
-            print("No hay secuencias válidas.")
+            print(f"[{datetime.now().strftime('%H:%M:%S')}]No hay secuencias válidas.")
             return
         
         longitud = [len(record.seq) for record in self.sequences.values()]
@@ -199,15 +183,15 @@ class Pipeline:
         self.metadata["media_longitud"] = media_long
 
         # Número total de secuencias.
-        print(f"Número total de secuencias: {total}") 
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Número total de secuencias: {total}") 
 
         # Longitud mínima, máxima y media.
-        print(f"Longitud mínima: {min_long}")
-        print(f"Longitud máxima: {max_long}")
-        print(f"Longitud media: {media_long}")
-        print(f"Número de secuencias de ADN: {self.metadata['n_dna']}")
-        print(f"Número de secuencias de ARN: {self.metadata['n_rna']}")
-        print(f"Número de secuencias de proteína: {self.metadata['n_prot']}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Longitud mínima: {min_long}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Longitud máxima: {max_long}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Longitud media: {media_long}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Número de secuencias de ADN: {self.metadata['n_dna']}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Número de secuencias de ARN: {self.metadata['n_rna']}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Número de secuencias de proteína: {self.metadata['n_prot']}")
 
         # Número de secuencias de cada tipo biológico.
 
@@ -216,34 +200,28 @@ class Pipeline:
         """
         Guarda las secuencias actuales usando SeqIO.write.
         """
-        print("Paso 6: Guardando secuencias...")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 6: Guardando secuencias...")
 
-        n_written = SeqIO.write(self.sequences.values(), output_path, output_format)
+        SeqIO.write(self.sequences.values(), output_path, output_format)
 
-        print(f"Fichero generado: {output_path}")
-        print(f"Número final de secuencias: {n_written}")
-
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Fichero generado: {output_path}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Número final de secuencias: {len(self.sequences)}")
 
     
     def run(self):
         """
         Punto de entrada principal del pipeline. Controla el flujo de ejecución.
         """
-        print("Inicio del Pipeline")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Inicio del Pipeline")
 
         self.load_sequences()
-
-        # Comprobamos que  self.config() no queda vacío:
-        min_length = self.config.get("min_length", 0)
-
-        self.filter_by_length(min_length)
-
+        self.filter_by_length(self.config["min_length"])
         self.classify_and_normalize()
         self.process()
         self.compute_basic_stats()
         self.save_sequences("output.fasta", self.input_format)
 
-        print("Fin del Pipeline")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Fin del Pipeline")
     
    
 
@@ -251,11 +229,9 @@ class Pipeline:
 
 # Ejecución desde línea de comandos.
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
+    if len(sys.argv)<3:
         print("Uso:")
-        print("python Pipeline.py fichero_secuencias formato")
-        print("Ejemplo:")
-        print("python Pipeline.py secuencias.fasta fasta")
+        print("python Pipeline.py SEQ1")
         sys.exit(1)
 
     input_path = sys.argv[1]     # fichero de secuencias
