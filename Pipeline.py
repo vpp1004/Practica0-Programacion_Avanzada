@@ -4,6 +4,7 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 from Bio.Seq import UndefinedSequenceError
+import json
 
 
 # Ejercicio 2: Estado interno del pipeline.
@@ -210,7 +211,12 @@ class Pipeline:
         """
         Guarda las secuencias actuales usando SeqIO.write.
 
-        
+        ---------
+        Params:
+        output_path: str
+            Ruta al fichero de salida.
+        output_format: str
+            Formato del fichero. 
         """
 
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 6: Guardando secuencias...")
@@ -219,12 +225,23 @@ class Pipeline:
 
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Fichero generado: {output_path}")
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Número final de secuencias: {len(self.sequences)}")
+    
+    # Lectura del JSON en Python.
+    def leer_configuracion ():
+        """
+        Recibe un fichero JSON y almacea su contenido en el atributo config de la clase Pipeline.
+        """
+        
+        with open (" config . json ") as f:
+            config = json.load (f)
+        print (config [" input_file "])
 
     
     def run(self):
         """
         Punto de entrada principal del pipeline. Controla el flujo de ejecución.
         """
+
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Inicio del Pipeline")
 
         self.load_sequences()
@@ -233,6 +250,7 @@ class Pipeline:
         self.process()
         self.compute_basic_stats()
         self.save_sequences("output.fasta", self.input_format)
+        self.leer_configuracion()
 
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Fin del Pipeline")
     
