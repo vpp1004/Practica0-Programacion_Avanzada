@@ -81,7 +81,14 @@ class Pipeline:
     def filter_by_length(self, min_length):
         """
         Elimina secuencias de longitud inferior a un umbral establecido anteriormente (5).
+
+        ---------
+        Params:
+        min_length: int
+            Umbral establecido de longitud mínima. 
+        ---------
         """
+
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 2: Filtrando por longitud mínima...")
 
         filtradas = {
@@ -107,6 +114,7 @@ class Pipeline:
         """
         Clasifica las secuencias y convierte ARN --> ADN. Descarta secuencias inválidas.
         """
+
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 3: Clasificación y normalización secuencias...")
 
         dict_dna = {"A", "C", "G", "T"}
@@ -153,6 +161,7 @@ class Pipeline:
         """
         Realiza un procesamiento simple sobre la secuencia
         """
+
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 4: Procesando secuencias...")
 
         longitud = [len(record.seq) for record in self.sequences.values()] # Calcular longitud
@@ -164,6 +173,7 @@ class Pipeline:
         """
         Calcula estadísticas descriptivas globales sobre las secuencias actualmente almacenadas.
         """
+
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 5: Calculando estadísticas globales...")
 
         total = len(self.sequences)
@@ -199,7 +209,10 @@ class Pipeline:
     def save_sequences(self, output_path, output_format):
         """
         Guarda las secuencias actuales usando SeqIO.write.
+
+        
         """
+
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Paso 6: Guardando secuencias...")
 
         SeqIO.write(self.sequences.values(), output_path, output_format)
