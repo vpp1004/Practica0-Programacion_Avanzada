@@ -47,7 +47,7 @@ class Pipeline:
         }
 
         # Diccionario con los parámetros de configuración del pipeline.
-        self.config = {} # Ahora la longitud mínima la tenemos en la lectura del JSON.
+        self.config = self.leer_configuracion() # Ahora la longitud mínima la tenemos en la lectura del JSON.
 
         # Diccionario con los resultados finales.
         self.results = {}
@@ -77,7 +77,7 @@ class Pipeline:
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Se cargaron {self.metadata['n_total']} secuencias.")
 
     # Ejercicio 8: Filtrado por longitud:
-    def filter_by_length(self, min_length):
+    def filter_by_length(self, min_length): # Modificar ahora pasando el self.leer_configuracion, en vez del min_length
         """
         Elimina secuencias de longitud inferior a un umbral establecido anteriormente (5).
 
@@ -93,7 +93,7 @@ class Pipeline:
         filtradas = {
             id_: record
             for id_, record in self.sequences.items()
-            if len(record.seq) >= min_length
+            if len(record.seq) >= min_length # filter_by_length_min
         }
 
         self.sequences = filtradas
@@ -225,12 +225,12 @@ class Pipeline:
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Número final de secuencias: {len(self.sequences)}")
     
     # Lectura del JSON en Python.
-    def leer_configuracion (ruta="config.json"): # Si no recibo una ruta, se fijará en que sea config.json.
+    def leer_configuracion (self, ruta="config.json"): # Si no recibo una ruta, se fijará en que sea config.json.
         """
         Recibe un fichero JSON y almacea su contenido en el atributo config de la clase Pipeline.
         """
 
-        print(f"[{datetime.now().strftime('%H:%M:%S')}]Leyendo el JSON")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Leyendo el JSON...")
 
         with open (ruta) as f:
             self.config = json.load (f)
