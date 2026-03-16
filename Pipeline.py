@@ -47,9 +47,7 @@ class Pipeline:
         }
 
         # Diccionario con los parámetros de configuración del pipeline.
-        self.config = {
-            "min_length" : 5  # Ponemos como parámetro de filtrado por longitud 5
-        }
+        self.config = {} # Ahora la longitud mínima la tenemos en la lectura del JSON.
 
         # Diccionario con los resultados finales.
         self.results = {}
@@ -227,14 +225,16 @@ class Pipeline:
         print(f"[{datetime.now().strftime('%H:%M:%S')}]Número final de secuencias: {len(self.sequences)}")
     
     # Lectura del JSON en Python.
-    def leer_configuracion ():
+    def leer_configuracion (ruta="config.json"): # Si no recibo una ruta, se fijará en que sea config.json.
         """
         Recibe un fichero JSON y almacea su contenido en el atributo config de la clase Pipeline.
         """
-        
-        with open (" config . json ") as f:
-            config = json.load (f)
-        print (config [" input_file "])
+
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Leyendo el JSON")
+
+        with open (ruta) as f:
+            self.config = json.load (f)
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Devolución del archivo[" input_file "])")
 
     
     def run(self):
