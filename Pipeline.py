@@ -234,7 +234,7 @@ class Pipeline:
 
         with open (ruta) as f:
             self.config = json.load (f)
-        print(f"[{datetime.now().strftime('%H:%M:%S')}]Devolución del archivo[" input_file "])")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]Devolución del archivo[" input_file "]")
 
     
     def run(self):
