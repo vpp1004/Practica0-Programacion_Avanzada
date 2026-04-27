@@ -1,0 +1,9 @@
+{
+    "input_file": "seqs_file.fasta",
+    "input_format": "fasta",
+    "output_file": "salida.fasta",
+    "output_format": "fasta",
+    "classify_sequences": true,
+    "compute_basic_stats": true,
+    "filter_by_length": true
+}
