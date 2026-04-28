@@ -18,43 +18,43 @@ class Pipeline:
         self.results = {} 
         self.config = {}
 
-        def read_config(self, ruta="config.json"): # Si no recibo una ruta, se fijará en que sea config.json.
-            """
-            Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.
+    def read_config(self, ruta="config.json"): # Si no recibo una ruta, se fijará en que sea config.json.
+        """
+        Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.
 
-            ------------
-            Params:
-                ruta: Ruta del fichero json.
+        ------------
+        Params:
+            ruta: Ruta del fichero json.
 
-            Return:
-                config: Diccionario que contiene los parámetros definidos en el fichero.
-            ------------
-            """
+        Return:
+            config: Diccionario que contiene los parámetros definidos en el fichero.
+        ------------
+        """
 
-            print("Paso 1: Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.")
+        print("Paso 1: Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.")
 
-            try: # Añado una excepción por si el fichero no existe.
-                with open(ruta) as f:
-                    self.config = json.load(f)
+        try: # Añado una excepción por si el fichero no existe.
+            with open(ruta) as f:
+                self.config = json.load(f)
 
-                    # Comprobaciones de que puedo acceder perfectamente a los parámetros del diccionario config. 
-                    print(f'Fichero de entrada, input_file: {self.config["input_file"]}') # Fichero de entrada: seqs_file.fasta
-                    print(f'Formato de entrada, input_format: {self.config["input_format"]}') # Formato de entrada: fasta
-                    print(f'Fichero de salida, output_file: {self.config["output_file"]}') # Fichero de salida: salida.fasta
-                    print(f'Formato de salida, output_format: {self.config["output_format"]}') # Formato de salida: fasta
-                    print(f'Clasificación de las secuencias: {self.config["classify_sequences"]}')
-                    print(f'Cálculo de estadísticas descriptivas: {self.config["compute_basic_stats"]}')
-                    print(f'Filtrado por tamaño: {self.config["filter_by_length"]}')
-                    
-                    return self.config
-                    
-            except FileNotFoundError:
-                print("El fichero de configuración no existe.")
-                return 
+                # Comprobaciones de que puedo acceder perfectamente a los parámetros del diccionario config. 
+                print(f'Fichero de entrada, input_file: {self.config["input_file"]}') # Fichero de entrada: seqs_file.fasta
+                print(f'Formato de entrada, input_format: {self.config["input_format"]}') # Formato de entrada: fasta
+                print(f'Fichero de salida, output_file: {self.config["output_file"]}') # Fichero de salida: salida.fasta
+                print(f'Formato de salida, output_format: {self.config["output_format"]}') # Formato de salida: fasta
+                print(f'Clasificación de las secuencias: {self.config["classify_sequences"]}')
+                print(f'Cálculo de estadísticas descriptivas: {self.config["compute_basic_stats"]}')
+                print(f'Filtrado por tamaño: {self.config["filter_by_length"]}')
+                
+                return self.config
+                
+        except FileNotFoundError:
+            print("El fichero de configuración no existe.")
+            return 
 
-            except json.JSONDecodeError:
-                print("El archivo JSON está mal formado.")
-                return 
+        except json.JSONDecodeError:
+            print("El archivo JSON está mal formado.")
+            return 
 
     def load_sequences(self, fichero, input_format):
         """
