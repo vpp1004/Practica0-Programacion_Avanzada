@@ -1,9 +1,12 @@
 {
-    "input_file": "seqs_file.fasta",
+    "input_file": "seqs.fasta", 
     "input_format": "fasta",
-    "output_file": "salida.fasta",
+    "output_file": "sequences_output.fasta", 
     "output_format": "fasta",
-    "classify_sequences": true,
+    "classify_sequences": true, 
     "compute_basic_stats": true,
-    "filter_by_length": true
+    "filter_by_length": true,
+    "filter_by_length_min": 200 , 
+    "gap_penalty": -5,
+    "matrix_name": "PAM250 "
 }

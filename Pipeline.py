@@ -3,6 +3,7 @@ import json
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
+from Bio.Align import substitution_matrices
 
 
 
@@ -237,6 +238,130 @@ class Pipeline:
 
         print("Filtrado y actualización de los datos correcto")
 
+    def smith_waterman(self, seq1, seq2, matrix_name, gap_penalty):
+        """
+        Implementa el algoritmo de alineamiento local Smith-Waterman para dos secuencias biológicas.
+
+        El método construye una matriz de puntuación utilizando programación dinámica, aplicando una matriz de sustitución (PAM, BLOSUM, etc.) y una penalización por 
+        gaps.
+
+        Posteriormente, realiza un proceso de backtracking desde la celda de mayor puntuación para reconstruir el mejor alineamiento local.
+
+        ------------
+        Params:
+            seq1: Secuencia 1.
+            seq2: Secuencia 2.
+            matrix_name: Nombre de la matriz de sustitución que se utiliza, en este caso PAM250.
+            gap_penalty: Puntuación de penalización de gaps.
+
+        Return:
+            alineamiento_seq1: Secuencia 1 alineada.
+            alineamiento_seq2: Secuencia 2 alineada.
+            puntuacion: Puntuación máxima de alineamiento local.
+        ------------
+        """
+
+        print("Paso 7: Algoritmo local de Smith-Waterman")
+
+        # Cargo la matriz de sustitución PAM/BLOSUM.
+        matriz_S = substitution_matrices.load(matrix_name) # Aquí se está cargando la matriz PAM250 definida en el archivo config.json.
+
+        # Creo la matriz de puntuación.
+        fila = len(seq1) + 1
+        columna = len(seq2) + 1
+
+        matriz_N = []
+        for i in range(fila):
+            nueva_fila = []
+            for j in range(columna):
+                nueva_fila.append(0)
+
+            matriz_N.append(nueva_fila)
+
+        # Creo la matriz del camino.
+        fila = len(seq1) + 1
+        columna = len(seq2) + 1
+
+        matriz_T = []
+        for i in range(fila):
+            nueva_fila = []
+            for j in range(columna):
+                nueva_fila.append("0")
+
+            matriz_T.append(nueva_fila) 
+        
+        # Relleno las matrices.
+        for i in range(1, len(seq1) + 1):
+            for j in range(1, len(seq2) + 1):
+                diagonal = matriz_N[i-1][j-1] + matriz_S[seq1[i-1], seq2[j-1]]
+                arriba = matriz_N[i-1][j] + gap_penalty
+                izquierda = matriz_N[i][j-1] + gap_penalty
+
+                matriz_N[i][j] = max(0, diagonal, arriba, izquierda)
+
+                if matriz_N[i][j] == 0:
+                    matriz_T[i][j] = "0"
+                
+                elif matriz_N[i][j] == diagonal:
+                    matriz_T[i][j] = "DIAG"
+
+                elif matriz_N[i][j] == arriba:
+                    matriz_T[i][j] = "UP"    
+
+                else:
+                    matriz_T[i][j] = "LEFT"
+
+        # Localizo el máximo score.
+        puntuacion = 0
+        max_i = 0
+        max_j = 0
+
+        for i in range(fila):
+            for j in range(columna):
+                if matriz_N[i][j] > puntuacion:
+                    puntuacion = matriz_N[i][j]
+                    max_i = i
+                    max_j = j 
+
+        # Realizo el backtracking desde el valor máximo hasta llegar al 0.
+        alineamiento_seq1 = ""
+        alineamiento_seq2 = ""
+
+        i = max_i
+        j = max_j
+
+
+        while matriz_N[i][j] != 0:
+            if matriz_T[i][j] == "DIAG":
+                alineamiento_seq1 += seq1[i-1]
+                alineamiento_seq2 += seq2[j-1]
+                i -= 1
+                j -= 1
+                
+            if matriz_T[i][j] == "UP":
+                alineamiento_seq1 += seq1[i-1]
+                alineamiento_seq2 += "-"
+                i -= 1
+
+            if matriz_T[i][j] == "LEFT":
+                alineamiento_seq1 += "-"
+                alineamiento_seq2 += seq2[j-1]
+                j -= 1
+            
+            else: 
+                break
+
+        # Invierto el alineamiento.
+        alineamiento_seq1 = alineamiento_seq1[::-1]
+        alineamiento_seq2 = alineamiento_seq2[::-1]
+
+        print("Score máximo:", puntuacion)
+        print("Alineamiento 1:", alineamiento_seq1)
+        print("Alineamiento 2:", alineamiento_seq2)
+        print("Algoritmo Smith-Waterman correcto")
+
+        return alineamiento_seq1, alineamiento_seq2, puntuacion
+
     def save_sequences(self, output_path, output_format):
         """
         Guarda las secuencias actuales del pipeline en un fichero utilizando SeqIO.write con el formato especificado.
@@ -251,7 +376,7 @@ class Pipeline:
         ------------
         """
 
-        print("Paso 7: Escritura de resultados")
+        print("Paso 8: Escritura de resultados")
 
         secuencias_escritas = SeqIO.write(self.sequences, output_path, output_format)
 
@@ -304,6 +429,7 @@ class Pipeline:
         self.filter_by_length() # Filtrado por longitud.
         self.classify_and_normalize() # Clasificación y normalización biológica.
         self.compute_basic_stats() # Cálculo de estadísticas finales.
+        self.smith_waterman(str(self.sequences[0].seq), str(self.sequences[1].seq), self.config["matrix_name"], self.config["gap_penalty"]) # Algoritmo local Smith Waterman.
         self.save_sequences(self.config["output_file"], self.config["output_format"]) # Guardado de las secuencias.
         
         print("Finalización del Pipeline")
