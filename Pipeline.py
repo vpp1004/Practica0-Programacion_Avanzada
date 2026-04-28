@@ -18,6 +18,44 @@ class Pipeline:
         self.results = {} 
         self.config = {}
 
+        def read_config(self, ruta="config.json"): # Si no recibo una ruta, se fijará en que sea config.json.
+            """
+            Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.
+
+            ------------
+            Params:
+                ruta: Ruta del fichero json.
+
+            Return:
+                config: Diccionario que contiene los parámetros definidos en el fichero.
+            ------------
+            """
+
+            print("Paso 1: Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.")
+
+            try: # Añado una excepción por si el fichero no existe.
+                with open(ruta) as f:
+                    self.config = json.load(f)
+
+                    # Comprobaciones de que puedo acceder perfectamente a los parámetros del diccionario config. 
+                    print(f'Fichero de entrada, input_file: {self.config["input_file"]}') # Fichero de entrada: seqs_file.fasta
+                    print(f'Formato de entrada, input_format: {self.config["input_format"]}') # Formato de entrada: fasta
+                    print(f'Fichero de salida, output_file: {self.config["output_file"]}') # Fichero de salida: salida.fasta
+                    print(f'Formato de salida, output_format: {self.config["output_format"]}') # Formato de salida: fasta
+                    print(f'Clasificación de las secuencias: {self.config["classify_sequences"]}')
+                    print(f'Cálculo de estadísticas descriptivas: {self.config["compute_basic_stats"]}')
+                    print(f'Filtrado por tamaño: {self.config["filter_by_length"]}')
+                    
+                    return self.config
+                    
+            except FileNotFoundError:
+                print("El fichero de configuración no existe.")
+                return 
+
+            except json.JSONDecodeError:
+                print("El archivo JSON está mal formado.")
+                return 
+
     def load_sequences(self, fichero, input_format):
         """
         Carga secuencias desde un fichero utilizando SeqIO.parse y las almacena en el estado interno del pipeline (self.sequences) como objetos SeqRecord.
@@ -32,7 +70,7 @@ class Pipeline:
         ------------
         """
 
-        print("Paso 1: Carga y lectura de un fichero, junto con el almacenaje de las secuencias cargadas")
+        print("Paso 2: Carga y lectura de un fichero, junto con el almacenaje de las secuencias cargadas")
 
         try: # Añado una excepción por si el archivo no existe.
             for seq_record in SeqIO.parse(fichero, input_format):
@@ -61,41 +99,6 @@ class Pipeline:
         self.metadata["n_prot"] = 0
 
         print("Carga, lectura y almacenamiento correctas")
-    
-    def read_config(self, ruta="config.json"): # Si no recibo una ruta, se fijará en que sea config.json.
-        """
-        Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.
-
-        ------------
-        Params:
-            ruta: Ruta del fichero json.
-
-        Return:
-            config: Diccionario que contiene los parámetros definidos en el fichero.
-        ------------
-        """
-        try: # Añado una excepción por si el fichero no existe.
-            with open(ruta) as f:
-                self.config = json.load(f)
-
-                # Comprobaciones de que puedo acceder perfectamente a los parámetros del diccionario config. 
-                print(f'Fichero de entrada, input_file: {self.config["input_file"]}') # Fichero de entrada: seqs_file.fasta
-                print(f'Formato de entrada, input_format: {self.config["input_format"]}') # Formato de entrada: fasta
-                print(f'Fichero de salida, output_file: {self.config["output_file"]}') # Fichero de salida: salida.fasta
-                print(f'Formato de salida, output_format: {self.config["output_format"]}') # Formato de salida: fasta
-                print(f'Clasificación de las secuencias: {self.config["classify_sequences"]}')
-                print(f'Cálculo de estadísticas descriptivas: {self.config["compute_basic_stats"]}')
-                print(f'Filtrado por tamaño: {self.config["filter_by_length"]}')
-                
-                return self.config
-                 
-        except FileNotFoundError:
-            print("El fichero de configuración no existe.")
-            return 
-
-        except json.JSONDecodeError:
-            print("El archivo JSON está mal formado.")
-            return 
 
     def process(self):
         """
@@ -105,7 +108,7 @@ class Pipeline:
         posteriores.
         """
 
-        print("Paso 2: Realizar operaciones de análisis simple sobre las secuencias")
+        print("Paso 3: Realizar operaciones de análisis simple sobre las secuencias")
 
         longitudes = []
         for n in self.sequences:
@@ -125,7 +128,7 @@ class Pipeline:
         Además, actualiza en self.metadata el número de secuencias de cada tipo biológico y descarta aquellas que contienen caracteres no válidos.
         """
 
-        print("Paso 4: Clasificación por el tipo biológico de cada secuencia")
+        print("Paso 5: Clasificación por el tipo biológico de cada secuencia")
 
         n_ADN = {"A", "C", "G", "T"}
         n_ARN = {"A", "C", "G", "U"}
@@ -164,7 +167,7 @@ class Pipeline:
         También muestra el número de secuencias de cada tipo biológico previamente calculado durante la fase de clasificación.
         """
 
-        print("Paso 5: Cálculo de las estadísticas descriptivas globales sobre las secuencias")
+        print("Paso 6: Cálculo de las estadísticas descriptivas globales sobre las secuencias")
 
         # Número total de secuencias.
         print(f"Número total de secuencias: {len(self.sequences)}")
@@ -201,7 +204,7 @@ class Pipeline:
         Además, actualiza las estadísticas de longitud en self.metadata y reinicia los contadores de tipos biológicos para su posterior recalculado.
         """
 
-        print("Paso 3: Elimina las secuencias que no cumplen cierto valor de longitud")
+        print("Paso 4: Elimina las secuencias que no cumplen cierto valor de longitud")
         
         min_length = 5
         nuevas_secuencias = []
@@ -216,7 +219,7 @@ class Pipeline:
         self.sequences = nuevas_secuencias 
 
         # Actualización de los datos de self.metadata
-        print("Paso 3.1: Actualización de los datos")
+        print("Paso 4.1: Actualización de los datos")
         longitudes = [len(n) for n in nuevas_secuencias]
 
         if longitudes == []:
@@ -248,7 +251,7 @@ class Pipeline:
         ------------
         """
 
-        print("Paso 6: Escritura de resultados")
+        print("Paso 7: Escritura de resultados")
 
         secuencias_escritas = SeqIO.write(self.sequences, output_path, output_format)
 
