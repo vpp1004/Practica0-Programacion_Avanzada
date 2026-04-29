@@ -1,10 +1,12 @@
 import sys
 import json
+import time
+from itertools import combinations
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 from Bio.Align import substitution_matrices
-
+from Bio.Align import PairwiseAligner
 
 
 # Práctica_Fichero_Config_PAB_2025
@@ -362,6 +364,174 @@ class Pipeline:
 
         return alineamiento_seq1, alineamiento_seq2, puntuacion
 
+    def medir_tiempo_smith_waterman_propia(self):
+        """
+        Mide el tiempo de ejecución del algoritmo Smith-Waterman (nuestra implementación) 
+        sobre todas las combinaciones de pares de secuencias sin repetir.
+ 
+        Proceso:
+        1. Genera todos los pares posibles de secuencias.
+        2. Para cada par: alinea y mide el tiempo que tarda.
+        3. Imprime los tiempos de cada par y el tiempo total.
+ 
+        Return:
+            tiempo_total: Tiempo total en segundos.
+        """
+ 
+        print("\n" + "="*80)
+        print("ANÁLISIS DE RENDIMIENTO: Smith-Waterman propia")
+        print("="*80)
+ 
+        # Validación: verificar que hay al menos 2 secuencias.
+        if len(self.sequences) < 2:
+            print("Error: Se necesitan al menos 2 secuencias para comparar.")
+            return 0
+ 
+        # Obtengo todas las combinaciones de pares de secuencias sin repetir.
+        pares_secuencias = list(combinations(range(len(self.sequences)), 2))
+        numero_pares = len(pares_secuencias)
+ 
+        print(f"Número total de pares a alinear: {numero_pares}")
+        print(f"Parámetros: Matriz = {self.config['matrix_name']}, Gap penalty = {self.config['gap_penalty']}")
+        print("-"*80)
+ 
+        # Medición del tiempo total.
+        tiempo_inicio_total = time.time()
+ 
+        contador = 1
+        for indice_seq1, indice_seq2 in pares_secuencias:
+            seq1 = str(self.sequences[indice_seq1].seq)
+            seq2 = str(self.sequences[indice_seq2].seq)
+ 
+            # Medición del tiempo para cada par.
+            tiempo_inicio_par = time.time()
+            
+            puntuacion = self.smith_waterman_sin_print(
+                seq1, 
+                seq2, 
+                self.config["matrix_name"], 
+                self.config["gap_penalty"]
+            )
+ 
+            tiempo_fin_par = time.time()
+            tiempo_par = tiempo_fin_par - tiempo_inicio_par
+ 
+            # Mostrar progreso.
+            nombre_seq1 = self.sequences[indice_seq1].id
+            nombre_seq2 = self.sequences[indice_seq2].id
+            longitud_seq1 = len(seq1)
+            longitud_seq2 = len(seq2)
+ 
+            print(f"Par {contador:2d}/{numero_pares} | {nombre_seq1} ({longitud_seq1} nt) vs {nombre_seq2} ({longitud_seq2} nt) | Score: {puntuacion:8.1f} | Tiempo: {tiempo_par:8.4f}s")
+ 
+            contador += 1
+ 
+        tiempo_fin_total = time.time()
+        tiempo_total = tiempo_fin_total - tiempo_inicio_total
+ 
+        # Almacenar resultados en metadata.
+        self.performance_results["smith_waterman_propia"] = {
+            "numero_pares": numero_pares,
+            "tiempo_total_segundos": tiempo_total,
+            "tiempo_medio_por_par": tiempo_total / numero_pares
+        }
+ 
+        print("-"*80)
+        print(f"TIEMPO TOTAL (Smith-Waterman propia): {tiempo_total:.4f} segundos")
+        print(f"TIEMPO MEDIO POR PAR: {tiempo_total / numero_pares:.4f} segundos")
+        print("="*80 + "\n")
+ 
+        return tiempo_total
+ 
+    def medir_tiempo_smith_waterman_biopython(self):
+        """
+        Mide el tiempo de ejecución del algoritmo Smith-Waterman (versión BioPython) 
+        sobre todas las combinaciones de pares de secuencias sin repetir.
+ 
+        Proceso:
+        1. Genera todos los pares posibles de secuencias.
+        2. Para cada par: alinea con BioPython y mide el tiempo que tarda.
+        3. Imprime los tiempos de cada par y el tiempo total.
+        4. Usa los mismos parámetros que nuestra implementación para una comparación justa.
+ 
+        Return:
+            tiempo_total: Tiempo total en segundos.
+        """
+ 
+        print("\n" + "="*80)
+        print("ANÁLISIS DE RENDIMIENTO: Smith-Waterman BioPython")
+        print("="*80)
+ 
+        # Validación: verificar que hay al menos 2 secuencias.
+        if len(self.sequences) < 2:
+            print("Error: Se necesitan al menos 2 secuencias para comparar.")
+            return 0
+ 
+        # Obtengo todas las combinaciones de pares de secuencias sin repetir.
+        pares_secuencias = list(combinations(range(len(self.sequences)), 2))
+        numero_pares = len(pares_secuencias)
+ 
+        # Configuro el alineador de BioPython.
+        alineador = PairwiseAligner()
+        alineador.substitution_matrix = substitution_matrices.load(self.config["matrix_name"])
+        alineador.open_gap_score = self.config["gap_penalty"]
+        alineador.extend_gap_score = self.config["gap_penalty"]
+        alineador.mode = 'local'  # Smith-Waterman es alineamiento local.
+ 
+        print(f"Número total de pares a alinear: {numero_pares}")
+        print(f"Parámetros: Matriz = {self.config['matrix_name']}, Gap penalty = {self.config['gap_penalty']}")
+        print("-"*80)
+ 
+        # Medición del tiempo total.
+        tiempo_inicio_total = time.time()
+ 
+        contador = 1
+        for indice_seq1, indice_seq2 in pares_secuencias:
+            seq1 = str(self.sequences[indice_seq1].seq)
+            seq2 = str(self.sequences[indice_seq2].seq)
+ 
+            # Medición del tiempo para cada par.
+            tiempo_inicio_par = time.time()
+            
+            # Ejecuto el alineador de BioPython.
+            alineamientos = alineador.align(seq1, seq2)
+            
+            # Obtengo el score del mejor alineamiento.
+            if alineamientos:
+                puntuacion = alineamientos[0].score
+            else:
+                puntuacion = 0
+ 
+            tiempo_fin_par = time.time()
+            tiempo_par = tiempo_fin_par - tiempo_inicio_par
+ 
+            # Mostrar progreso.
+            nombre_seq1 = self.sequences[indice_seq1].id
+            nombre_seq2 = self.sequences[indice_seq2].id
+            longitud_seq1 = len(seq1)
+            longitud_seq2 = len(seq2)
+ 
+            print(f"Par {contador:2d}/{numero_pares} | {nombre_seq1} ({longitud_seq1} nt) vs {nombre_seq2} ({longitud_seq2} nt) | Score: {puntuacion:8.1f} | Tiempo: {tiempo_par:8.4f}s")
+ 
+            contador += 1
+ 
+        tiempo_fin_total = time.time()
+        tiempo_total = tiempo_fin_total - tiempo_inicio_total
+ 
+        # Almacenar resultados en metadata.
+        self.performance_results["smith_waterman_biopython"] = {
+            "numero_pares": numero_pares,
+            "tiempo_total_segundos": tiempo_total,
+            "tiempo_medio_por_par": tiempo_total / numero_pares
+        }
+ 
+        print("-"*80)
+        print(f"TIEMPO TOTAL (Smith-Waterman BioPython): {tiempo_total:.4f} segundos")
+        print(f"TIEMPO MEDIO POR PAR: {tiempo_total / numero_pares:.4f} segundos")
+        print("="*80 + "\n")
+ 
+        return tiempo_total
+    
     def save_sequences(self, output_path, output_format):
         """
         Guarda las secuencias actuales del pipeline en un fichero utilizando SeqIO.write con el formato especificado.
