@@ -10,7 +10,6 @@ from Bio.Align import substitution_matrices
 from Bio.Align import PairwiseAligner
 
 
-# Práctica_Fichero_Config_PAB_2025
 class Pipeline:
     def __init__ (self):
         """
@@ -24,10 +23,12 @@ class Pipeline:
 
     def obtener_hora(self):
         """
-        Nos devuelve la hora actual.
+        Nos devuelve la hora actual de ejecución.
         """
+
         return datetime.now().strftime("%H:%M:%S")
     
+    # Primer paso.
     def read_config(self, ruta="config.json"): # Si no recibo una ruta, se fijará en que sea config.json.
         """
         Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.
@@ -41,7 +42,7 @@ class Pipeline:
         ------------
         """
 
-        print(f"[{self.obtener_hora()}] Paso 1: Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.")
+        print(f"[{self.obtener_hora()}] Paso 1: Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.\n")
 
         try: # Añado una excepción por si el fichero no existe.
             with open(ruta) as f:
@@ -54,18 +55,21 @@ class Pipeline:
                 print(f'Formato de salida, output_format: {self.config["output_format"]}') # Formato de salida: fasta
                 print(f'Clasificación de las secuencias: {self.config["classify_sequences"]}')
                 print(f'Cálculo de estadísticas descriptivas: {self.config["compute_basic_stats"]}')
-                print(f'Filtrado por tamaño: {self.config["filter_by_length"]}')
+                print(f'Filtrado por tamaño: {self.config["filter_by_length"]}\n')
                 
+                print("Recepción y almacenamiento correcto.\n")
+
                 return self.config
                 
         except FileNotFoundError:
-            print("El fichero de configuración no existe.")
+            print("El fichero de configuración no existe.\n")
             return 
 
         except json.JSONDecodeError:
-            print("El archivo JSON está mal formado.")
+            print("El archivo JSON está mal formado.\n")
             return 
 
+    # Segundo paso.
     def load_sequences(self, fichero, input_format):
         """
         Carga secuencias desde un fichero utilizando SeqIO.parse y las almacena en el estado interno del pipeline (self.sequences) como objetos SeqRecord.
@@ -80,22 +84,22 @@ class Pipeline:
         ------------
         """
 
-        print(f"[{self.obtener_hora()}] Paso 2: Carga y lectura de un fichero, junto con el almacenaje de las secuencias cargadas")
+        print(f"[{self.obtener_hora()}] Paso 2: Carga y lectura de un fichero, junto con el almacenaje de las secuencias cargadas.\n")
 
         try: # Añado una excepción por si el archivo no existe.
             for seq_record in SeqIO.parse(fichero, input_format):
                 self.sequences.append(seq_record)
         except FileNotFoundError:
-            print("El fichero de secuencias no existe")
+            print("El fichero de secuencias no existe.\n")
             return
 
         # Incializar self.metadata
-            # Inicializar longitud de secuencias, longitud mínima, máxima y media.
+        # Inicializar longitud de secuencias, longitud mínima, máxima y media.
         longitudes = [len(n) for n in self.sequences]
 
-            # Para que no se produzca un error sino hay longitudes.
+        # Para que no se produzca un error sino hay longitudes.
         if longitudes == []:
-            print("No se pueden calcular las estadísticas porque no hay secuencias válidas")
+            print("No se pueden calcular las estadísticas porque no hay secuencias válidas.\n")
             return
         
         self.metadata["num_seqs"] = len(self.sequences)
@@ -103,13 +107,14 @@ class Pipeline:
         self.metadata["max_length"] = max(longitudes)
         self.metadata["mean_length"] = sum(longitudes)/len(longitudes)
     
-            # Inicializar el número de secuencias de cada tipo biológico.
+        # Inicializar el número de secuencias de cada tipo biológico.
         self.metadata["n_dna"] = 0
         self.metadata["n_rna"] = 0
         self.metadata["n_prot"] = 0
 
-        print("Carga, lectura y almacenamiento correctas")
+        print("Carga, lectura y almacenamiento correctas.\n")
 
+    # Tercer paso.
     def process(self):
         """
         Realiza un procesamiento básico sobre las secuencias almacenadas en el pipeline.
@@ -118,7 +123,7 @@ class Pipeline:
         posteriores.
         """
 
-        print(f"[{self.obtener_hora()}] Paso 3: Realizar operaciones de análisis simple sobre las secuencias")
+        print(f"[{self.obtener_hora()}] Paso 3: Realizar operaciones de análisis simple sobre las secuencias.\n")
 
         longitudes = []
         for n in self.sequences:
@@ -126,8 +131,52 @@ class Pipeline:
 
         self.metadata["seq_length"] = longitudes
 
-        print("Realización de operaciones de análisis correctas")
+        print("Realización de operaciones de análisis correctas.\n")
 
+    # Cuarto paso.
+    def filter_by_length(self):
+        """
+        Filtra las secuencias del pipeline eliminando aquellas cuya longitud es inferior a un umbral mínimo definido internamente.
+
+        El método modifica directamente el estado interno (self.sequences), manteniendo únicamente las secuencias válidas. 
+
+        Además, actualiza las estadísticas de longitud en self.metadata y reinicia los contadores de tipos biológicos para su posterior recalculado.
+        """
+
+        print(f"[{self.obtener_hora()}] Paso 4: Elimina las secuencias que no cumplen cierto valor de longitud.\n")
+        
+        min_length = 5
+        nuevas_secuencias = []
+
+        for n in self.sequences:
+            if len(n) >= min_length:
+                nuevas_secuencias.append(n)
+
+            else:
+                print(f"Se elimina la secuencia {n}.\n")
+
+        self.sequences = nuevas_secuencias 
+
+        # Actualización de los datos de self.metadata
+        print("Paso 4.1: Actualización de los datos\n")
+        longitudes = [len(n) for n in nuevas_secuencias]
+
+        if longitudes == []:
+            print("No se pueden calcular las estadísticas porque no hay secuencias válidas.\n")
+            return
+    
+        self.metadata["min_length"] = min(longitudes)
+        self.metadata["max_length"] = max(longitudes)
+        self.metadata["mean_length"] = sum(longitudes)/len(longitudes)
+    
+        # Actaulizar el número de secuencias de cada tipo biológico, las inicializamos a 0 de nuevo.
+        self.metadata["n_dna"] = 0
+        self.metadata["n_rna"] = 0
+        self.metadata["n_prot"] = 0
+
+        print("Filtrado y actualización de los datos correcto.\n")
+
+    # Quinto paso.
     def classify_and_normalize (self):
         """
         Clasifica cada secuencia según su tipo biológico (ADN, ARN o proteína) en función de los caracteres que contiene.
@@ -138,7 +187,7 @@ class Pipeline:
         Además, actualiza en self.metadata el número de secuencias de cada tipo biológico y descarta aquellas que contienen caracteres no válidos.
         """
 
-        print(f"[{self.obtener_hora()}] Paso 5: Clasificación por el tipo biológico de cada secuencia")
+        print(f"[{self.obtener_hora()}] Paso 5: Clasificación por el tipo biológico de cada secuencia.\n")
 
         n_ADN = {"A", "C", "G", "T"}
         n_ARN = {"A", "C", "G", "U"}
@@ -162,12 +211,13 @@ class Pipeline:
                 nuevas_secuencias.append(n)
 
             else:
-                print(f"La secuencia {n} es inválida")
+                print(f"La secuencia {n} es inválida.\n")
 
         self.sequences = nuevas_secuencias 
 
-        print("Clasificación de las secuencias según su tipo biológico correcta")
+        print("Clasificación de las secuencias según su tipo biológico correcta.\n")
 
+    # Sexto paso.
     def compute_basic_stats(self):
         """
         Calcula estadísticas descriptivas globales sobre las secuencias almacenadas en el pipeline.
@@ -177,76 +227,35 @@ class Pipeline:
         También muestra el número de secuencias de cada tipo biológico previamente calculado durante la fase de clasificación.
         """
 
-        print(f"[{self.obtener_hora()}] Paso 6: Cálculo de las estadísticas descriptivas globales sobre las secuencias")
+        print(f"[{self.obtener_hora()}] Paso 6: Cálculo de las estadísticas descriptivas globales sobre las secuencias.\n")
 
         # Número total de secuencias.
-        print(f"Número total de secuencias: {len(self.sequences)}")
+        print(f"Número total de secuencias: {len(self.sequences)}.\n")
 
         # Longitud mínima, máxima y media.
         longitudes = [len(n) for n in self.sequences]
 
         # Para que no se produzca un error sino hay longitudes.
         if longitudes == []:
-            print("No se pueden calcular las estadísticas porque no hay secuencias válidas")
+            print("No se pueden calcular las estadísticas porque no hay secuencias válidas.\n")
             return
         
         self.metadata["min_length"] = min(longitudes)
         self.metadata["max_length"] = max(longitudes)
         self.metadata["mean_length"] = sum(longitudes)/len(longitudes)
 
-        print(f"Secuencia de menor tamaño: {min(longitudes)}")
-        print(f"Secuencia de mayor tamaño: {max(longitudes)}")
-        print(f"Tamaño medio de la longitud de las secuencias: {sum(longitudes)/len(longitudes)}")
+        print(f"Secuencia de menor tamaño: {min(longitudes)}.")
+        print(f"Secuencia de mayor tamaño: {max(longitudes)}.")
+        print(f"Tamaño medio de la longitud de las secuencias: {sum(longitudes)/len(longitudes)}.\n")
     
         # Número de secuencias de cada tipo biológico.
         print(f'Cantidad de secuencias de ADN: {self.metadata["n_dna"]}')
         print(f'Cantidad de secuencias de ARN: {self.metadata["n_rna"]}')
-        print(f'Cantidad de secuencias de proteínas: {self.metadata["n_prot"]}')
+        print(f'Cantidad de secuencias de proteínas: {self.metadata["n_prot"]}.\n')
 
-        print("Estadísticas calculadas")
+        print("Estadísticas calculadas.\n")
 
-    def filter_by_length(self):
-        """
-        Filtra las secuencias del pipeline eliminando aquellas cuya longitud es inferior a un umbral mínimo definido internamente.
-
-        El método modifica directamente el estado interno (self.sequences), manteniendo únicamente las secuencias válidas. 
-
-        Además, actualiza las estadísticas de longitud en self.metadata y reinicia los contadores de tipos biológicos para su posterior recalculado.
-        """
-
-        print(f"[{self.obtener_hora()}] Paso 4: Elimina las secuencias que no cumplen cierto valor de longitud")
-        
-        min_length = 5
-        nuevas_secuencias = []
-
-        for n in self.sequences:
-            if len(n) >= min_length:
-                nuevas_secuencias.append(n)
-
-            else:
-                print(f"Se elimina la secuencia {n}")
-
-        self.sequences = nuevas_secuencias 
-
-        # Actualización de los datos de self.metadata
-        print("Paso 4.1: Actualización de los datos")
-        longitudes = [len(n) for n in nuevas_secuencias]
-
-        if longitudes == []:
-            print("No se pueden calcular las estadísticas porque no hay secuencias válidas")
-            return
-    
-        self.metadata["min_length"] = min(longitudes)
-        self.metadata["max_length"] = max(longitudes)
-        self.metadata["mean_length"] = sum(longitudes)/len(longitudes)
-    
-        # Actaulizar el número de secuencias de cada tipo biológico, las inicializamos a 0 de nuevo.
-        self.metadata["n_dna"] = 0
-        self.metadata["n_rna"] = 0
-        self.metadata["n_prot"] = 0
-
-        print("Filtrado y actualización de los datos correcto")
-
+    # Séptimo paso.
     def smith_waterman(self, seq1, seq2, matrix_name, gap_penalty):
         """
         Implementa el algoritmo de alineamiento local Smith-Waterman para dos secuencias biológicas.
@@ -267,6 +276,9 @@ class Pipeline:
             alineamiento_seq1: Secuencia 1 alineada.
             alineamiento_seq2: Secuencia 2 alineada.
             puntuacion: Puntuación máxima de alineamiento local.
+            matchs: Coincidencia exacta en la alineación.
+            mismatchs: No coincidencia en la alineación.
+            gaps: Insercción  o deleción en la alineación
         ------------
         """
 
@@ -334,6 +346,11 @@ class Pipeline:
         alineamiento_seq1 = ""
         alineamiento_seq2 = ""
 
+        # Inicializo a cero los contadores para la puntuación de "matchs", la puntuación de "mismatchs" y la puntuación de "gaps".
+        matchs = 0
+        mismatchs = 0
+        gaps = 0
+
         i = max_i
         j = max_j
 
@@ -342,17 +359,26 @@ class Pipeline:
             if matriz_T[i][j] == "DIAG":
                 alineamiento_seq1 += seq1[i-1]
                 alineamiento_seq2 += seq2[j-1]
+
+                # Sumo en los contadores.
+                if seq1[i-1] == seq2[j-1]:
+                    matchs += 1
+                else: 
+                    mismatchs += 1
+
                 i -= 1
                 j -= 1
                 
             elif matriz_T[i][j] == "UP":
                 alineamiento_seq1 += seq1[i-1]
                 alineamiento_seq2 += "-"
+                gaps += 1
                 i -= 1
 
             elif matriz_T[i][j] == "LEFT":
                 alineamiento_seq1 += "-"
                 alineamiento_seq2 += seq2[j-1]
+                gaps += 1
                 j -= 1
             
             else: 
@@ -362,74 +388,94 @@ class Pipeline:
         alineamiento_seq1 = alineamiento_seq1[::-1]
         alineamiento_seq2 = alineamiento_seq2[::-1]
 
-        return alineamiento_seq1, alineamiento_seq2, puntuacion
+        return alineamiento_seq1, alineamiento_seq2, puntuacion, matchs, mismatchs, gaps
 
     def medir_tiempo_smith_waterman_propia(self):
         """
-        Mide el tiempo de ejecución del algoritmo Smith-Waterman (nuestra implementación) 
-        sobre todas las combinaciones de pares de secuencias sin repetir.
+        Mide el tiempo de ejecución del algoritmo Smith-Waterman (nuestra implementación) sobre todas las combinaciones de pares de secuencias sin repetir.
 
         Genera todos los pares posibles de secuencias. Para cada par alinea y mide el tiempo que tarda e imprime el tiempo total y los tiempos de cada par.
-        
+
+        ------------
+        Return:
+            tiempos_pares: Diccionario que contiene los tiempos de cada par.
+            tiempo_total: Tiempo total de ejecución.
+        ------------
         """
  
-        print("\n" + "="*80)
-        print("Medición de tiempo: Smith-Waterman propia")
-        print("="*80)
+        print("Medición de tiempo: Smith-Waterman propia.")
+
+        # Diccionario donde guardamos el tiempo de cada par.
+        tiempos_pares = {}
  
-        #Verificamos que hay al menos 2 secuencias
+        #Verificamos que hay al menos 2 secuencias.
         if len(self.sequences) < 2:
-            print("Error: Se necesitan al menos 2 secuencias para comparar.")
-            return 0
+            print("Error: Se necesitan al menos 2 secuencias para comparar.\n")
+            return {}, 0
  
         # Obtenemos todas las combinaciones de pares de secuencias sin repetir.
         pares_secuencias = list(combinations(range(len(self.sequences)), 2))
-        numero_pares = len(pares_secuencias)
- 
-        print(f"Número total de pares a alinear: {numero_pares}\n")
+        print(f"Número total de pares a alinear: {len(pares_secuencias)}.\n")
         
         # Medimos el tiempo de inicio.
         tiempo_inicio_total = time.time()
         
-        #Ejecutamos el algoritmo de smith-waterman para cada par
+        #Ejecutamos el algoritmo de smith-waterman para cada par.
         for indice_seq1, indice_seq2 in pares_secuencias:
             seq1 = str(self.sequences[indice_seq1].seq)
             seq2 = str(self.sequences[indice_seq2].seq)
 
+            # Tiempo inicio del par.
+            inicio_par = time.time()
+
             self.smith_waterman(seq1, seq2, self.config["matrix_name"], self.config["gap_penalty"])
 
-        # Registramos tiempo de fin y calculamos el total
+            # Tiempo fin del par.
+            fin_par = time.time()
+
+            # Tiempo total del par.
+            tiempo_par_total = fin_par - inicio_par
+
+            # Actulizamos el diccionario del tiempo de cada par.
+            tiempos_pares[(indice_seq1, indice_seq2)] = tiempo_par_total
+
+            print(f"Tiempo del par del algoritmo propio ({indice_seq1}, {indice_seq2}) es {tiempo_par_total:.4f} segundos.")
+
+        # Registramos tiempo de fin y calculamos el total.
         tiempo_fin_total = time.time()
         tiempo_total = tiempo_fin_total - tiempo_inicio_total
 
-        print(f"Tiempo total: {tiempo_total:.4f} segundos")
-        print("="*80 + "\n")
+        print(f"Tiempo total del algoritmo propio: {tiempo_total:.4f} segundos.\n")
  
-        return tiempo_total
+        return tiempos_pares, tiempo_total
  
     def medir_tiempo_smith_waterman_biopython(self):
         """
-        Mide el tiempo de ejecución del algoritmo Smith-Waterman (versión BioPython) 
-        sobre todas las combinaciones de pares de secuencias sin repetir.
+        Mide el tiempo de ejecución del algoritmo Smith-Waterman (versión BioPython) sobre todas las combinaciones de pares de secuencias sin repetir.
 
-        Genera todos los pares posibles de secuencias. Para cada par alinea con Biopython y mide el tiempo que tarda e imprime el tiempo total y los tiempos de cada par. Usa los mismos parámetros que nuestra implementación para una comparación justa.
-        
+        Genera todos los pares posibles de secuencias. Para cada par alinea con Biopython y mide el tiempo que tarda e imprime el tiempo total y los tiempos de 
+        cada par. Usa los mismos parámetros que nuestra implementación para una comparación justa.
+
+        ------------
+        Return:
+            tiempos_pares: Diccionario que contiene los tiempos de cada par.
+            tiempo_total: Tiempo total de ejecución.
+        ------------
         """
  
-        print("\n" + "="*80)
-        print("Medicion de tiempo: Smith-Waterman BioPython")
-        print("="*80)
+        print("Medicion de tiempo: Smith-Waterman BioPython.")
+
+        # Diccionario donde guardamos el tiempo de cada par.
+        tiempos_pares = {}
  
         #Verificamos que hay al menos 2 secuencias
         if len(self.sequences) < 2:
-            print("Error: Se necesitan al menos 2 secuencias para comparar.")
-            return 0
+            print("Error: Se necesitan al menos 2 secuencias para comparar.\n")
+            return {}, 0
  
         # Obtenemso todas las combinaciones de pares de secuencias sin repetir
         pares_secuencias = list(combinations(range(len(self.sequences)), 2))
-        numero_pares = len(pares_secuencias)
-
-        print(f"Número total de pares: {numero_pares}\n")
+        print(f"Número total de pares a alinear: {len(pares_secuencias)}.\n")
  
         #Configuramos primero el alineador de BioPython con los mismos parámetros
         alineador = PairwiseAligner()
@@ -446,47 +492,65 @@ class Pipeline:
             seq1 = str(self.sequences[indice_seq1].seq)
             seq2 = str(self.sequences[indice_seq2].seq)
 
-            alineador.align(seq1, seq2)
+            # Tiempo inicio del par.
+            inicio_par = time.time()
+
+            # Ejecutamos todo el alineamiento completo.
+            alineamientos = alineador.align(seq1, seq2)
+            alineamientos[0]
+
+             # Tiempo fin del par.
+            fin_par = time.time()
+
+            # Tiempo total del par.
+            tiempo_par_total = fin_par - inicio_par
+
+            # Actulizamos el diccionario del tiempo de cada par.
+            tiempos_pares[(indice_seq1, indice_seq2)] = tiempo_par_total
+
+            print(f"Tiempo del par del algoritmo de biopython ({indice_seq1}, {indice_seq2}) es {tiempo_par_total:.4f} segundos.")
 
         # Registramos tiempo de fin y calculamos el total
         tiempo_fin_total = time.time()
         tiempo_total = tiempo_fin_total - tiempo_inicio_total
  
-        print(f"Tiempo total: {tiempo_total:.4f} segundos")
-        print("="*80 + "\n")
+        print(f"Tiempo total del algoritmo de biopython: {tiempo_total:.4f} segundos.\n")
  
-        return tiempo_total
+        return tiempos_pares, tiempo_total
     
+    # Octavo paso.
     def comparar_tiempos(self):
         """
-        Imprimimos por pantalla los tiempos de ejecución de ambas versiones de Smith-Waterman y los comparamos viendo cual es más rápido.
+        Imprime por pantalla los tiempos de ejecución de ambas versiones de Smith-Waterman y los compara cuál es más rápida.
         """
-        print("\n" + "="*80)
-        print(f"[{self.obtener_hora()}] Paso 9: Comparación de tiempos")
-        print("="*80)
+
+        print(f"[{self.obtener_hora()}] Paso 8: Comparación de tiempos.\n")
 
         # Ejecutamos la medición con versión propia:
-        tiempo_propia = self.medir_tiempo_smith_waterman_propia()
+        # Utilizamos "_" como variable descartada porque la función devuelve dos valores (resultado y tiempo), pero solo nos interesa el tiempo de ejecución.
+        _, tiempo_propia = self.medir_tiempo_smith_waterman_propia()
 
         # Ejecutamos la medición con versión de BioPython:
-        tiempo_biopython = self.medir_tiempo_smith_waterman_biopython()
+        _, tiempo_biopython = self.medir_tiempo_smith_waterman_biopython()
 
         # Imprimimos los resultados:
         print("Resultados:")
         print(f"Smith-Waterman propia: {tiempo_propia:.4f} segundos")
-        print(f"Smith-Waterman BioPython: {tiempo_biopython:.4f} segundos")
+        print(f"Smith-Waterman BioPython: {tiempo_biopython:.4f} segundos.\n")
 
         # Calculamos cual es la forma más rápida
         if tiempo_biopython < tiempo_propia:
             diferencia = tiempo_propia - tiempo_biopython
-            print(f"BioPython es {diferencia:.2f} segundos más rápido.")
+            print(f"BioPython es {diferencia:.2f} segundos más rápida.\n")
 
-        else:
+        elif tiempo_propia < tiempo_biopython:
             diferencia = tiempo_biopython - tiempo_propia
-            print(f"Versión propia es {diferencia:.2f} segundos más rápido.")
+            print(f"Versión propia es {diferencia:.2f} segundos más rápida.\n")
+        
+        else:
+            print("Ambas implementaciones tienen el mismo tiempo de ejecución.\n")
 
-        print("="*80 + "\n")
-
+    # Noveno paso.
     def save_sequences(self, output_path, output_format):
         """
         Guarda las secuencias actuales del pipeline en un fichero utilizando SeqIO.write con el formato especificado.
@@ -501,35 +565,16 @@ class Pipeline:
         ------------
         """
 
-        print(f"[{self.obtener_hora()}] Paso 8: Escritura de resultados")
+        print(f"[{self.obtener_hora()}] Paso 9: Escritura de resultados.\n")
 
         secuencias_escritas = SeqIO.write(self.sequences, output_path, output_format)
 
         # Resumen del resultado final.
         print(f"Secuencias escritas: {secuencias_escritas}")
         print(f"Fichero de salida: {output_path}")
-        print(f"Formato de salida: {output_format}")
+        print(f"Formato de salida: {output_format}\n")
 
-        # No imprimo esta información para que no quede repetitiva con la información presente en el método compute_basic_stats(self)
-        # Resumen estadístico.
-        #print(f"Número total en pipeline: {len(self.sequences)}")
-        
-        #if not self.sequences:
-        #    print("No hay secuencias para mostrar")
-        #    return
-        
-        #longitudes = [len(n) for n in self.sequences]
-
-        #print(f"Secuencia de menor tamaño: {min(longitudes)}")
-        #print(f"Secuencia de mayor tamaño: {max(longitudes)}")
-        #print(f"Tamaño medio de la longitud de las secuencias: {sum(longitudes)/len(longitudes)}")
-    
-        # Número de secuencias de cada tipo biológico.
-        #print(f'Cantidad de secuencias de ADN: {self.metadata["n_dna"]}')
-        #print(f'Cantidad de secuencias de ARN: {self.metadata["n_rna"]}')
-        #print(f'Cantidad de secuencias de proteínas: {self.metadata["n_prot"]}')
-
-        print("Almacenamiento de secuencias correcto")
+        print("Almacenamiento de secuencias correcto.\n")
         
     def run (self, ruta):
         """
@@ -546,7 +591,7 @@ class Pipeline:
         ------------
         """
 
-        print("Comienzo del Pipeline:")
+        print("Comienzo del Pipeline:\n")
 
         self.read_config(ruta) # Lectura del fichero de configuración.
         self.load_sequences(self.config["input_file"], self.config["input_format"]) # Carga de datos.
@@ -554,21 +599,29 @@ class Pipeline:
         self.filter_by_length() # Filtrado por longitud.
         self.classify_and_normalize() # Clasificación y normalización biológica.
         self.compute_basic_stats() # Cálculo de estadísticas finales.
-        
-        #Algoritmo local smith-waterman:
-        seq1_alineada, seq2_alineada, puntuacion = self.smith_waterman(str(self.sequences[0].seq), str(self.sequences[1].seq), self.config["matrix_name"], self.config["gap_penalty"])
-        print(f"[{self.obtener_hora()}] Paso 7: Algoritmo local de Smith-Waterman")
-        print("Score máximo:", puntuacion)
-        print("Alineamiento 1:", seq1_alineada)
-        print("Alineamiento 2:", seq2_alineada)
-        print("Algoritmo Smith-Waterman correcto")
 
-        self.save_sequences(self.config["output_file"], self.config["output_format"]) # Guardado de las secuencias.
+         #Algoritmo local smith-waterman:
+        seq1_alineada, seq2_alineada, puntuacion, matchs, mismatchs, gaps = self.smith_waterman(str(self.sequences[0].seq), str(self.sequences[1].seq), self.config["matrix_name"], self.config["gap_penalty"])
+
+        print(f"[{self.obtener_hora()}] Paso 7: Algoritmo local de Smith-Waterman.\n")
+
+        print(f"Score máximo: {puntuacion}")
+        print(f"Matchs: {matchs}")
+        print(f"Mismatchs: {mismatchs}")
+        print(f"Gaps: {gaps}\n")
+        print(f"Alineamiento 1: {seq1_alineada}\n")
+        print(f"Alineamiento 2: {seq2_alineada}\n")
+
+        print("Algoritmo Smith-Waterman correcto.\n")
+
+        # No imprimimos los tiempos por separado debido a que se recogen en el método comparar_tiempo().
         #self.medir_tiempo_smith_waterman_propia()
         #self.medir_tiempo_smith_waterman_biopython()
-        self.comparar_tiempos()
 
-        print(f"[{self.obtener_hora()}]Finalización del Pipeline")
+        self.comparar_tiempos() # Comparación tiempos del algoritmo Smith-Waterman propio y con Biopython.
+        self.save_sequences(self.config["output_file"], self.config["output_format"]) # Guardado de las secuencias.
+
+        print(f"[{self.obtener_hora()}]Finalización del Pipeline.")
 
 """
 Punto de entrada del programa cuando se ejecuta desde línea de comandos.
