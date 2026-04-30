@@ -1,6 +1,7 @@
 import sys
 import json
 import time
+from datetime import datetime
 from itertools import combinations
 from Bio.Seq import Seq
 from Bio import SeqIO
@@ -21,6 +22,12 @@ class Pipeline:
         self.results = {}
         self.performance_results = {}
 
+    def obtener_hora(self):
+        """
+        Nos devuelve la hora actual.
+        """
+        return datetime.now().strftime("%H:%M:%S")
+    
     def read_config(self, ruta="config.json"): # Si no recibo una ruta, se fijará en que sea config.json.
         """
         Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.
@@ -34,7 +41,7 @@ class Pipeline:
         ------------
         """
 
-        print("Paso 1: Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.")
+        print(f"[{self.obtener_hora()}] Paso 1: Recibe la ruta a un fichero JSON y almacena su contenido en el atributo config.")
 
         try: # Añado una excepción por si el fichero no existe.
             with open(ruta) as f:
@@ -73,7 +80,7 @@ class Pipeline:
         ------------
         """
 
-        print("Paso 2: Carga y lectura de un fichero, junto con el almacenaje de las secuencias cargadas")
+        print(f"[{self.obtener_hora()}] Paso 2: Carga y lectura de un fichero, junto con el almacenaje de las secuencias cargadas")
 
         try: # Añado una excepción por si el archivo no existe.
             for seq_record in SeqIO.parse(fichero, input_format):
@@ -111,7 +118,7 @@ class Pipeline:
         posteriores.
         """
 
-        print("Paso 3: Realizar operaciones de análisis simple sobre las secuencias")
+        print(f"[{self.obtener_hora()}] Paso 3: Realizar operaciones de análisis simple sobre las secuencias")
 
         longitudes = []
         for n in self.sequences:
@@ -131,7 +138,7 @@ class Pipeline:
         Además, actualiza en self.metadata el número de secuencias de cada tipo biológico y descarta aquellas que contienen caracteres no válidos.
         """
 
-        print("Paso 5: Clasificación por el tipo biológico de cada secuencia")
+        print(f"[{self.obtener_hora()}] Paso 5: Clasificación por el tipo biológico de cada secuencia")
 
         n_ADN = {"A", "C", "G", "T"}
         n_ARN = {"A", "C", "G", "U"}
@@ -170,7 +177,7 @@ class Pipeline:
         También muestra el número de secuencias de cada tipo biológico previamente calculado durante la fase de clasificación.
         """
 
-        print("Paso 6: Cálculo de las estadísticas descriptivas globales sobre las secuencias")
+        print(f"[{self.obtener_hora()}] Paso 6: Cálculo de las estadísticas descriptivas globales sobre las secuencias")
 
         # Número total de secuencias.
         print(f"Número total de secuencias: {len(self.sequences)}")
@@ -207,7 +214,7 @@ class Pipeline:
         Además, actualiza las estadísticas de longitud en self.metadata y reinicia los contadores de tipos biológicos para su posterior recalculado.
         """
 
-        print("Paso 4: Elimina las secuencias que no cumplen cierto valor de longitud")
+        print(f"[{self.obtener_hora()}] Paso 4: Elimina las secuencias que no cumplen cierto valor de longitud")
         
         min_length = 5
         nuevas_secuencias = []
@@ -455,7 +462,7 @@ class Pipeline:
         Imprimimos por pantalla los tiempos de ejecución de ambas versiones de Smith-Waterman y los comparamos viendo cual es más rápido.
         """
         print("\n" + "="*80)
-        print("Comparación de tiempos")
+        print(f"[{self.obtener_hora()}] Paso 9: Comparación de tiempos")
         print("="*80)
 
         # Ejecutamos la medición con versión propia:
@@ -494,7 +501,7 @@ class Pipeline:
         ------------
         """
 
-        print("Paso 8: Escritura de resultados")
+        print(f"[{self.obtener_hora()}] Paso 8: Escritura de resultados")
 
         secuencias_escritas = SeqIO.write(self.sequences, output_path, output_format)
 
@@ -550,7 +557,7 @@ class Pipeline:
         
         #Algoritmo local smith-waterman:
         seq1_alineada, seq2_alineada, puntuacion = self.smith_waterman(str(self.sequences[0].seq), str(self.sequences[1].seq), self.config["matrix_name"], self.config["gap_penalty"])
-        print("Paso 7: Algoritmo local de Smith-Waterman")
+        print(f"[{self.obtener_hora()}] Paso 7: Algoritmo local de Smith-Waterman")
         print("Score máximo:", puntuacion)
         print("Alineamiento 1:", seq1_alineada)
         print("Alineamiento 2:", seq2_alineada)
@@ -561,7 +568,7 @@ class Pipeline:
         #self.medir_tiempo_smith_waterman_biopython()
         self.comparar_tiempos()
 
-        print("Finalización del Pipeline")
+        print(f"[{self.obtener_hora()}]Finalización del Pipeline")
 
 """
 Punto de entrada del programa cuando se ejecuta desde línea de comandos.
